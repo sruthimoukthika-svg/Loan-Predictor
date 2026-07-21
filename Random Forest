@@ -1,0 +1,106 @@
+import os
+
+print(os.listdir())
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import joblib
+
+df = pd.read_csv("train_u6lujuX_CVtuZ9i.csv")
+print(df.head())
+print(df.shape)
+
+# Removes extra spaces from column names
+df.columns = df.columns.str.strip()
+
+# Removes rows with missing values
+df = df.dropna()
+
+print(df.columns.tolist())
+
+X = df[['Gender',
+        'Married',
+        'Dependents',
+        'Education',
+        'Self_Employed',
+        'ApplicantIncome',
+        'LoanAmount',
+        'Credit_History',
+        'Property_Area']]
+
+y = df["Loan_Status"]
+
+# Converts text columns into numbers
+X = pd.get_dummies(X)
+
+# Converts target into numbers
+y = y.replace({"Y": 1, "N": 0})
+
+print(X.head())
+print(y.head())
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+model = RandomForestClassifier(
+    n_estimators=200,
+    random_state=42,
+    max_depth=5
+)
+
+model.fit(X_train, y_train)
+
+prediction = model.predict(X_test)
+
+print("Prediction")
+print(prediction)
+
+print("Actual values")
+print(y_test.values)
+
+print("Accuracy:", accuracy_score(y_test, prediction))
+print("Precision:", precision_score(y_test, prediction))
+print("Recall:", recall_score(y_test, prediction))
+print("F1 Score:", f1_score(y_test, prediction))
+
+# Saves model
+joblib.dump(model, "RF.pkl")
+
+
+# Example new loan prediction
+new_data = pd.DataFrame(
+    [["Male",
+      "Yes",
+      "0",
+      "Graduate",
+      "No",
+      5000,
+      150,
+      1,
+      "Urban"]],
+    columns=['Gender',
+             'Married',
+             'Dependents',
+             'Education',
+             'Self_Employed',
+             'ApplicantIncome',
+             'LoanAmount',
+             'Credit_History',
+             'Property_Area']
+)
+
+new_data = pd.get_dummies(new_data)
+
+new_data = new_data.reindex(
+    columns=model.feature_names_in_,
+    fill_value=0
+)
+
+loaded_model = joblib.load("RF.pkl")
+
+new_prediction = loaded_model.predict(new_data)
+
+# 1 = Approved, 0 = Not Approved
+print(new_prediction[0])
